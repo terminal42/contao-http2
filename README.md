@@ -50,3 +50,19 @@ As soon as these prerequisites are fulfilled, you can install this
 extension, check the checkbox in the root pages you want to have
 optimized HTTP/2 support for and your done. Welcome to the speedy side
 of the web! You're welcome.
+
+## What happens for older clients, only supporting HTTP/1.1?
+
+HTTP/2 is 100% backwards compatible so everything will just work fine.
+Obviously, they won't get any combined files anymore as soon as you
+optimize your website for HTTP/2. Thus, for those users your website is
+likely to get a bit slower but will still work as expected.
+That's called progressive enhancement.
+
+## So how do I decide whether I want HTTP/2 or not?
+
+You want it. Period. There is actually only one exception to that rule:
+If you think most of your target audience (e.g. say you're building an
+intranet application) still runs clients that do not support HTTP/2, do
+not use this extension. Otherwise, there's no reason not to use it.
+If you think there are more reasons, feel free to file an issue ;-)
