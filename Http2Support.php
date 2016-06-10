@@ -16,11 +16,12 @@ class Http2Support
      * It only searches for assets likely being embedded into the document and
      * not stuff like pdf files or mp4 files because this is rather content that
      * is going to be pulled only on demand.
-     * Also, this only has to be best effort. Most of the files should be pushed
-     * using server push and nothing will break, even if the regex discovers
-     * invalid files. The header will just be useless.
+     * Also, this only has to be best effort. The regex will cover most of the
+     * files and if some are missing it doesn't harm anyway. Moreover, even
+     * if the regex discovers invalid files, nothing will break. The Link header
+     * will just be useless but won't really harm either.
      *
-     * @var array
+     * @var string
      */
     const assetsExtractorRegex = '@(href|src)=\"([^ ]*\.(jpe?g|png|gif|css|js|svg|svgz))\"@';
 
