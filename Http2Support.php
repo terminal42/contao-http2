@@ -109,10 +109,15 @@ class Http2Support
         // CSS can be replaced normally
         $buffer = str_replace('[[TL_CSS]]', implode("\n", $cssReplacements), $buffer);
 
-        // JS will be added to TL_HEAD in the core so we have to replace it,
-        // unset the JS and provide the place holder again so the core can add
-        // more to it.
+        // JS will be added to TL_HEAD in the core so we have to replace it
+        // and provide the place holder again so the core can add
+        // more (e.g. custom head tags) to it.
         $buffer = str_replace('[[TL_HEAD]]', "\n" . implode("\n", $jsReplacements) . '[[TL_HEAD]]', $buffer);
+
+        // Reset values so Contao itself does not process them anymore
+        $GLOBALS['TL_FRAMEWORK_CSS'] = [];
+        $GLOBALS['TL_CSS'] = [];
+        $GLOBALS['TL_USER_CSS'] = [];
         $GLOBALS['TL_JAVASCRIPT'] = [];
 
         return $buffer;
