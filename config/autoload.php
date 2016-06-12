@@ -10,3 +10,4 @@
  */
 
 ClassLoader::addClass('Http2Support', 'system/modules/http2/Http2Support.php');
+ClassLoader::addClass('Http2Asset', 'system/modules/http2/Http2Asset.php');
