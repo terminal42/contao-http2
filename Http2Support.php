@@ -32,7 +32,7 @@ class Http2Support
      */
     public function fixRootPageSettings($dc)
     {
-        if ($dc->activeRecord->enableHttp2Support) {
+        if ($dc->activeRecord->enableHttp2Optimization) {
             $set = [
                 'useSSL'        => 1,
                 'staticFiles'   => '',
@@ -166,6 +166,6 @@ class Http2Support
     {
         global $objPage;
         $root = \PageModel::findByPk($objPage->rootId);
-        return (bool) $root->enableHttp2Support;
+        return (bool) $root->enableHttp2Optimization;
     }
 }
