@@ -12,20 +12,6 @@
 class Http2Support
 {
     /**
-     * Regular expressions to find assets in the html document.
-     * It only searches for assets likely being embedded into the document and
-     * not stuff like pdf files or mp4 files because this is rather content that
-     * is going to be pulled only on demand.
-     * Also, this only has to be best effort. The regex will cover most of the
-     * files and if some are missing it doesn't harm anyway. Moreover, even
-     * if the regex discovers invalid files, nothing will break. The Link header
-     * will just be useless but won't really harm either.
-     *
-     * @var string
-     */
-    const assetsExtractorRegex = '@(href|src)=\"([^ ]*\.(jpe?g|png|gif|css|js|svg|svgz))\"@';
-
-    /**
      * Ensure the root page settings are correct when enabling HTTP/2 support.
      *
      * @param $dc
@@ -58,103 +44,207 @@ class Http2Support
     }
 
     /**
-     * Replace the dynamic script tags before the core does it so nothing
-     * ever gets combined.
+     * Parse custom head HTML to send the Link headers.
+     *
+     * @param \PageModel $page
+     * @param \LayoutModel $layout
+     */
+    public function sendLinkHeadersForCustomHead($page, $layout)
+    {
+        if (!$this->http2IsEnabled()) {
+
+            return;
+        }
+
+        $this->extractAndSendLinkHeaders($layout->head);
+    }
+
+    /**
+     * @param string $buffer
+     * @param string|null $template
+     *
+     * @return string
+     */
+    public function handleAssets($buffer, $template)
+    {
+        // No template -> output from cache
+        if (null === $template) {
+            $this->extractAndSendLinkHeaders($buffer);
+
+            return $buffer;
+        }
+
+        if (!$this->http2IsEnabled()) {
+
+            return $buffer;
+        }
+
+        return $this->modifyBuffer($buffer);
+    }
+
+    /**
+     * Extract <link rel="preload" ...> tags and add the Link headers
+     * to the request because some intermediates seem to only support
+     * the Link header.
+     *
+     * @param string $buffer
+     */
+    private function extractAndSendLinkHeaders($buffer)
+    {
+        preg_match_all(
+            '@<link rel="(preload|prefetch)" href="([^"]+)"( as="([^"]+)")?>$@m',
+            $buffer,
+            $matches);
+
+        $links = [];
+        foreach ($matches as $match) {
+            $links[] = new Http2Link($match[2], $match[1], $match[4]);
+        }
+
+        $this->sendLinkHeaders($links);
+    }
+
+    /**
+     * Send link headers.
+     *
+     * @param Http2Link[] $links
+     */
+    private function sendLinkHeaders(array $links)
+    {
+        foreach ($links as $link) {
+            header($link->getAsHeader(), false);
+        }
+    }
+
+    /**
+     * Modify the buffer.
+     * - Replace the dynamic script tags before the core does it so nothing
+     *   ever gets combined.
+     * - Add the <link ...> tags to the <head>
      *
      * @param string $buffer
      *
      * @return string
      */
-    public function ensureFilesNotCombined($buffer)
+    private function modifyBuffer($buffer)
     {
-        if (!$this->http2IsEnabled()) {
-
-            return $buffer;
-        }
-
         // TL_JQUERY is not external, ignore.
         // TL_MOOTOOLS is not external, ignore.
         // TL_BODY is not external, ignore.
         // TL_HEAD is not combined, ignore.
-
         global $objPage;
         $xhtml = 'xhtml' === $objPage->outputFormat;
-        $cssReplacements = [];
-        $jsReplacements = [];
+        $assets = [];
+        $links = [];
 
-        // Add the CSS framework style sheets (TL_FRAMEWORK_CSS)
-        foreach (array_unique((array) $GLOBALS['TL_FRAMEWORK_CSS']) as $stylesheet) {
-            $options = \StringUtil::resolveFlaggedUrl($stylesheet);
-            $cssReplacements[] = \Template::generateStyleTag($stylesheet, $options->media, $xhtml);
+        $assets = array_merge($assets, $this->processCss($buffer, $xhtml));
+        $assets = array_merge($assets, $this->processJs($buffer, $xhtml));
+
+        /* @var Http2Asset $asset */
+        foreach ($assets as $asset) {
+            $links[] = $asset->getLinkForAsset('preload');
         }
 
-        // Add the internal style sheets
-        foreach (array_unique((array) $GLOBALS['TL_CSS']) as $stylesheet) {
-            $options = \StringUtil::resolveFlaggedUrl($stylesheet);
-            $cssReplacements[] = \Template::generateStyleTag($stylesheet, $options->media, $xhtml);
+        // Enrich CSS and JS assets with custom assets from the page layout or
+        // third party modules
+        foreach (array_unique((array) $GLOBALS['HTTP2_PUSH_LINKS']) as $link) {
+            if (!($link instanceof Http2Link)) {
+                throw new RuntimeException('Push assets have to be an instace of Http2Link');
+            }
+
+            $links[] = $link;
         }
 
-        // Add the user style sheets
-        foreach (array_unique((array) $GLOBALS['TL_USER_CSS']) as $stylesheet) {
-            $options = \StringUtil::resolveFlaggedUrl($stylesheet);
-            $cssReplacements[] = \Template::generateStyleTag($stylesheet, $options->media, $xhtml);
+        // Add the <link> tags to TL_HEAD
+        /* @var Http2Link $link */
+        foreach ($links as $link) {
+            $GLOBALS['TL_HEAD'][] = $link->getAsTag();
         }
 
-        // Add the internal scripts
-        foreach (array_unique((array) $GLOBALS['TL_JAVASCRIPT']) as $js) {
-            $options = \StringUtil::resolveFlaggedUrl($js);
-            $jsReplacements[] = \Template::generateScriptTag($js, $options->async);
-        }
-
-        // CSS can be replaced normally
-        $buffer = str_replace('[[TL_CSS]]', implode("\n", $cssReplacements), $buffer);
-
-        // JS will be added to TL_HEAD in the core so we have to replace it
-        // and provide the place holder again so the core can add
-        // more (e.g. custom head tags) to it.
-        $buffer = str_replace('[[TL_HEAD]]', "\n" . implode("\n", $jsReplacements) . '[[TL_HEAD]]', $buffer);
-
-        // Reset values so Contao itself does not process them anymore
-        $GLOBALS['TL_FRAMEWORK_CSS'] = [];
-        $GLOBALS['TL_CSS'] = [];
-        $GLOBALS['TL_USER_CSS'] = [];
-        $GLOBALS['TL_JAVASCRIPT'] = [];
+        // Send headers in addition to the head tags
+        $this->sendLinkHeaders($links);
 
         return $buffer;
     }
 
     /**
-     * Analyzes an HTML structure and adds the Link headers to enable server
-     * push.
+     * Process the CSS files on the buffer and return all the assets as array.
      *
-     * This is not cached because the regex is really fast.
+     * @param string $buffer
+     * @param bool $xhtml
      *
-     * @param $buffer
+     * @return Http2Asset[]
      */
-    public function handleServerPush($buffer)
+    private function processCss(&$buffer, $xhtml)
     {
-        if (!$this->http2IsEnabled()) {
-
-            return $buffer;
-        }
-
         $assets = [];
 
-        preg_match_all(self::assetsExtractorRegex, $buffer, $matches);
-        foreach ($matches[2] as $match) {
-            // Skip absolute links and external protocol links
-            if ('/' === $match[0] || null !== parse_url($match, PHP_URL_SCHEME)) {
-                continue;
-            }
+        // Add the CSS framework style sheets (TL_FRAMEWORK_CSS)
+        // Add the internal style sheets
+        // Add the user style sheets
+        foreach (array_merge(
+                     array_unique((array) $GLOBALS['TL_FRAMEWORK_CSS']),
+                     array_unique((array) $GLOBALS['TL_CSS']),
+                     array_unique((array) $GLOBALS['TL_USER_CSS'])
+                 ) as $stylesheet) {
+            $options  = \StringUtil::resolveFlaggedUrl($stylesheet);
+            $asset    = new Http2Asset($stylesheet, 'css');
+            $asset->setMedia($options->media);
 
-            $assets[] = $match;
+            $assets[] = $asset;
         }
 
+        $replacement = '';
+        /* @var Http2Asset $asset */
         foreach ($assets as $asset) {
-            header('Link: </' . $asset . '>; rel=prefetch', false);
+            $replacement .= $asset->getTag($xhtml) . "\n";
         }
 
-        return $buffer;
+        $buffer = str_replace('[[TL_CSS]]', $replacement, $buffer);
+
+        // Reset values so Contao itself does not process them anymore
+        $GLOBALS['TL_FRAMEWORK_CSS'] = [];
+        $GLOBALS['TL_CSS'] = [];
+        $GLOBALS['TL_USER_CSS'] = [];
+
+        return $assets;
+    }
+
+    /**
+     * Process the CSS files on the buffer and return all the assets as array.
+     *
+     * @param string $buffer
+     * @param bool $xhtml
+     *
+     * @return Http2Asset[]
+     */
+    private function processJs(&$buffer, $xhtml)
+    {
+        $assets = [];
+
+        foreach (array_unique((array) $GLOBALS['TL_JAVASCRIPT']) as $js) {
+            $options  = \StringUtil::resolveFlaggedUrl($js);
+            $asset    = new Http2Asset($js, 'js');
+            $asset->setAsync($options->async);
+
+            $assets[] = $asset;
+        }
+
+        // JS will be added to TL_HEAD in the core so we have to replace it
+        // and provide the place holder again so the core can add
+        // more (e.g. our own <link> tags plus, custom head tags etc.) to it.
+        /* @var Http2Asset $asset */
+        $replacement = '';
+        foreach ($assets as $asset) {
+            $replacement .= $asset->getTag($xhtml) . "\n";
+        }
+
+        $buffer = str_replace('[[TL_HEAD]]', $replacement . '[[TL_HEAD]]', $buffer);
+
+        // Reset values so Contao itself does not process them anymore
+        $GLOBALS['TL_JAVASCRIPT'] = [];
+
+        return $assets;
     }
 
     /**
