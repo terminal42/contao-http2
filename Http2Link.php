@@ -163,4 +163,14 @@ class Http2Link
                 break;
         }
     }
+
+    /**
+     * Returns the header representation. Useful to compare links.
+     *
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->getAsHeader();
+    }
 }
