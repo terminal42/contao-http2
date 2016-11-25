@@ -199,12 +199,14 @@ class Http2Support
 
         // Filter duplicates
         $links = array_unique($links);
-
+        $tags = [];
         // Add the <link> tags to TL_HEAD
         /* @var Http2Link $link */
         foreach ($links as $link) {
-            $GLOBALS['TL_HEAD'][] = $link->getAsTag();
+            $tags[] = $link->getAsTag();
         }
+
+        $buffer = str_replace('</head>', implode("\n\t", $tags) . "\n" . '</head>', $buffer);
 
         // Send headers in addition to the head tags
         $this->sendLinkHeaders($links);
