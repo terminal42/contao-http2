@@ -124,7 +124,7 @@ class Http2Link
      */
     public function guessAsType()
     {
-        $extension = parse_url($this->asset);
+        $extension = pathinfo($this->asset, PATHINFO_EXTENSION);
 
         // Do not handle svg and svgz as it might be both, an image or a font
         switch ($extension) {
