@@ -36,10 +36,10 @@ class Http2Support
      */
     public function redirectToHttps()
     {
-        if (false === \Environment::get('ssl')) {
-            if ($this->http2IsEnabled()) {
-                \Controller::redirect(preg_replace('/^http/', 'https', \Environment::get('uri')));
-            }
+        if (false === \Environment::get('ssl') && $this->http2IsEnabled()) {
+            \Controller::redirect(
+                preg_replace('/^http/', 'https', \Environment::get('uri'))
+            );
         }
     }
 
