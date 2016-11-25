@@ -13,5 +13,5 @@
  * Hooks
  */
 $GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'redirectToHttps'];
-$GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'sendLinkHeadersForCustomHead'];
+$GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'addLinkHeadersFromCustomHead'];
 $GLOBALS['TL_HOOKS']['modifyFrontendPage'][] = ['Http2Support', 'handleAssets'];

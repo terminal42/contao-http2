@@ -49,14 +49,16 @@ class Http2Support
      * @param \PageModel $page
      * @param \LayoutModel $layout
      */
-    public function sendLinkHeadersForCustomHead($page, $layout)
+    public function addLinkHeadersFromCustomHead($page, $layout)
     {
-        if (!$this->http2IsEnabled()) {
+        if (!$this->http2IsEnabled($page)) {
 
             return;
         }
 
-        $this->extractAndSendLinkHeaders($layout->head);
+        $links = $this->findLinks($layout->head);
+
+        $GLOBALS['HTTP2_PUSH_LINKS'] = array_merge($GLOBALS['HTTP2_PUSH_LINKS'], $links);
     }
 
     /**
@@ -69,7 +71,8 @@ class Http2Support
     {
         // No template -> output from cache
         if (null === $template) {
-            $this->extractAndSendLinkHeaders($buffer);
+            $links = $this->findLinks($buffer);
+            $this->sendLinkHeaders($links);
 
             return $buffer;
         }
@@ -83,25 +86,29 @@ class Http2Support
     }
 
     /**
-     * Extract <link rel="preload" ...> tags and add the Link headers
-     * to the request because some intermediates seem to only support
-     * the Link header.
+     * Extract <link rel="preload" ...> tags and return them.
      *
-     * @param string $buffer
+     * @param string $subject
+     *
+     * @return Http2Link[]
      */
-    private function extractAndSendLinkHeaders($buffer)
+    private function findLinks($subject)
     {
         preg_match_all(
             '@<link rel="(preload|prefetch)" href="([^"]+)"( as="([^"]+)")?>$@m',
-            $buffer,
+            $subject,
             $matches);
 
         $links = [];
         foreach ($matches as $match) {
+            if (!isset($match[2]) || '' === $match[2]) {
+                continue;
+            }
+
             $links[] = new Http2Link($match[2], $match[1], $match[4]);
         }
 
-        $this->sendLinkHeaders($links);
+        return $links;
     }
 
     /**
@@ -147,13 +154,16 @@ class Http2Support
 
         // Enrich CSS and JS assets with custom assets from the page layout or
         // third party modules
-        foreach (array_unique((array) $GLOBALS['HTTP2_PUSH_LINKS']) as $link) {
+        foreach ((array) $GLOBALS['HTTP2_PUSH_LINKS'] as $link) {
             if (!($link instanceof Http2Link)) {
                 throw new RuntimeException('Push assets have to be an instace of Http2Link');
             }
 
             $links[] = $link;
         }
+
+        // Filter duplicates
+        $links = array_unique($links);
 
         // Add the <link> tags to TL_HEAD
         /* @var Http2Link $link */
