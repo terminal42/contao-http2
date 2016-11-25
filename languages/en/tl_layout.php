@@ -10,8 +10,6 @@
  */
 
 /**
- * Hooks
+ * Fields
  */
-$GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'addLinkHeadersFromLayoutServerPushAssets'];
-$GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'addLinkHeadersFromCustomHead'];
-$GLOBALS['TL_HOOKS']['modifyFrontendPage'][] = ['Http2Support', 'handleAssets'];
+$GLOBALS['TL_LANG']['tl_layout']['http2ServerPushAssets'] = ['HTTP/2 Server Push - Files', 'Here you can choose the files for which you want to send HTTP/2 server push headers.'];

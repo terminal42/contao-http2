@@ -44,6 +44,41 @@ class Http2Support
     }
 
     /**
+     * Add HTTP/2 server push assets from the page layout.
+     *
+     * @param \PageModel $page
+     * @param \LayoutModel $layout
+     */
+    public function addLinkHeadersFromLayoutServerPushAssets($page, $layout)
+    {
+        if (!$this->http2IsEnabled($page)) {
+
+            return;
+        }
+
+        $files = deserialize($layout->http2ServerPushAssets, true);
+
+        if (0 === count($files)) {
+
+            return;
+        }
+
+        $files = \FilesModel::findMultipleByUuids($files);
+
+        if (null === $files) {
+
+            return;
+        }
+
+        foreach ($files as $file) {
+            $link = new Http2Link($file->path, 'preload');
+            $link->guessAsType();
+
+            $GLOBALS['HTTP2_PUSH_LINKS'][] = $link;
+        }
+    }
+
+    /**
      * Parse custom head HTML to send the Link headers.
      *
      * @param \PageModel $page
@@ -260,12 +295,18 @@ class Http2Support
     /**
      * Checks if in that page tree HTTP/2 support is enabled.
      *
+     * @param \PageModel $page
+     *
      * @return bool
      */
-    private function http2IsEnabled()
+    private function http2IsEnabled(\PageModel $page = null)
     {
-        global $objPage;
-        $root = \PageModel::findByPk($objPage->rootId);
+        if (null === $page) {
+            global $objPage;
+            $page = $objPage;
+        }
+
+        $root = \PageModel::findByPk($page->rootId);
         return (bool) $root->enableHttp2Optimization;
     }
 }
