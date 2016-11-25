@@ -125,11 +125,11 @@ class Http2Asset
     /**
      * Get the link instance for a given asset.
      *
-     * @param string|null $hint
+     * @param string $hint
      *
      * @return Http2Link
      */
-    public function getLinkForAsset($hint = null)
+    public function getLinkForAsset($hint)
     {
         $link = new Http2Link($this->url, $hint);
 
