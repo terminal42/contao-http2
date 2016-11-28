@@ -93,7 +93,7 @@ class Http2Support
 
         $links = $this->findLinks($layout->head);
 
-        $GLOBALS['HTTP2_PUSH_LINKS'] = array_merge($GLOBALS['HTTP2_PUSH_LINKS'], $links);
+        $GLOBALS['HTTP2_PUSH_LINKS'] = array_merge((array) $GLOBALS['HTTP2_PUSH_LINKS'], $links);
     }
 
     /**
