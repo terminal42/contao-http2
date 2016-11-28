@@ -12,4 +12,4 @@
 /**
  * Fields
  */
-$GLOBALS['TL_LANG']['tl_page']['enableHttp2Support'] = ['Enable HTTP/2 support', 'Enables HTTP/2 support for this domain.'];
+$GLOBALS['TL_LANG']['tl_page']['enableHttp2Optimization'] = ['Optimize for HTTP/2', 'Enables HTTP/2 optimization for this domain.'];

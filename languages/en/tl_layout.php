@@ -9,6 +9,7 @@
  * @link       http://github.com/terminal42/contao-http2
  */
 
-ClassLoader::addClass('Http2Support', 'system/modules/http2/Http2Support.php');
-ClassLoader::addClass('Http2Link', 'system/modules/http2/Http2Link.php');
-ClassLoader::addClass('Http2Asset', 'system/modules/http2/Http2Asset.php');
+/**
+ * Fields
+ */
+$GLOBALS['TL_LANG']['tl_layout']['http2ServerPushAssets'] = ['HTTP/2 Server Push - Files', 'Here you can choose the files for which you want to send HTTP/2 server push headers.'];

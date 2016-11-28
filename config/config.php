@@ -12,6 +12,6 @@
 /**
  * Hooks
  */
-$GLOBALS['TL_HOOKS']['getPageLayout'][]             = ['Http2Support', 'redirectToHttps'];
-$GLOBALS['TL_HOOKS']['replaceDynamicScriptTags'][]  = ['Http2Support', 'ensureFilesNotCombined'];
-$GLOBALS['TL_HOOKS']['modifyFrontendPage'][]        = ['Http2Support', 'handleServerPush'];
+$GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'addLinkHeadersFromLayoutServerPushAssets'];
+$GLOBALS['TL_HOOKS']['getPageLayout'][]      = ['Http2Support', 'addLinkHeadersFromCustomHead'];
+$GLOBALS['TL_HOOKS']['modifyFrontendPage'][] = ['Http2Support', 'handleAssets'];

@@ -19,16 +19,16 @@ $GLOBALS['TL_DCA']['tl_page']['config']['onsubmit_callback'][] = ['Http2Support'
  */
 $GLOBALS['TL_DCA']['tl_page']['palettes']['root'] = str_replace(
     'useSSL',
-    'useSSL,enableHttp2Support',
+    'useSSL,enableHttp2Optimization',
     $GLOBALS['TL_DCA']['tl_page']['palettes']['root']
 );
 
 /**
  * Fields
  */
-$GLOBALS['TL_DCA']['tl_page']['fields']['enableHttp2Support'] = [
-    'label'         => &$GLOBALS['TL_LANG']['tl_page']['enableHttp2Support'],
+$GLOBALS['TL_DCA']['tl_page']['fields']['enableHttp2Optimization'] = [
+    'label'         => &$GLOBALS['TL_LANG']['tl_page']['enableHttp2Optimization'],
     'inputType'     => 'checkbox',
     'eval'          => ['tl_class' => 'clr m12'],
-    'sql'   => "char(1) NOT NULL default ''"
+    'sql'           => "char(1) NOT NULL default ''"
 ];
