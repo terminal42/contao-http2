@@ -3,7 +3,8 @@
 HTTP/2 provides a lot of new features and possibilities to speed up the
 delivery of your page. Version 3.5 of Contao does have LTS support until
 2019 but will not get any new features. While Contao 4+ will certainly
-introduce new features into the core to bring you better HTTP/2 support,
+introduce new features into the core to bring you better HTTP/2 support
+(which already happened with Contao 4.3),
 this extension aims to bring the most important improvements to Contao
 3.5.
 
@@ -32,7 +33,6 @@ tags to the `<head>` part of your HTML document for all CSS as well as
 JavaScript files so you can benefit from HTTP/2's ability for server
 push automatically.
 
-// TODO:
 * It provides a new setting in the page layout to choose more assets
 you want to preload automatically.
 
