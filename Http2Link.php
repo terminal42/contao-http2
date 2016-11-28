@@ -24,13 +24,13 @@ class Http2Link
      */
     public function __construct($asset, $hint, $as = null)
     {
-        $this->asset = $asset;
-        $this->hint  = $hint;
-        $this->as    = $as;
+        $this->setAsset($asset)
+            ->setHint($hint)
+            ->setAs($as);
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getAsset()
     {
@@ -38,13 +38,22 @@ class Http2Link
     }
 
     /**
-     * @param mixed $asset
+     * @param string $asset
      *
      * @return Http2Link
+     *
+     * @throws InvalidArgumentException
      */
     public function setAsset($asset)
     {
-        $this->asset = $asset;
+        $asset = (string) $asset;
+
+        // Make sure we have an absolute link here for maximum compatibility
+        if (!preg_match('@^https?://@', $asset)) {
+            throw new InvalidArgumentException('Must provide absolute links for Http2Link instances!');
+        }
+
+        $this->asset = (string) $asset;
 
         return $this;
     }

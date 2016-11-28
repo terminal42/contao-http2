@@ -71,7 +71,7 @@ class Http2Support
         }
 
         foreach ($files as $file) {
-            $link = new Http2Link($file->path, 'preload');
+            $link = new Http2Link($this->makeUrlAbsolute($file->path), 'preload');
             $link->guessAsType();
 
             $GLOBALS['HTTP2_PUSH_LINKS'][] = $link;
@@ -140,7 +140,7 @@ class Http2Support
                 continue;
             }
 
-            $links[] = new Http2Link($match[2], $match[1], $match[4]);
+            $links[] = new Http2Link($this->makeUrlAbsolute($match[2]), $match[1], $match[4]);
         }
 
         return $links;
@@ -235,7 +235,7 @@ class Http2Support
                      array_unique((array) $GLOBALS['TL_USER_CSS'])
                  ) as $stylesheet) {
             $options  = \StringUtil::resolveFlaggedUrl($stylesheet);
-            $asset    = new Http2Asset($stylesheet, 'css');
+            $asset    = new Http2Asset($this->makeUrlAbsolute($stylesheet), 'css');
             $asset->setMedia($options->media);
 
             $assets[] = $asset;
@@ -271,7 +271,7 @@ class Http2Support
 
         foreach (array_unique((array) $GLOBALS['TL_JAVASCRIPT']) as $js) {
             $options  = \StringUtil::resolveFlaggedUrl($js);
-            $asset    = new Http2Asset($js, 'js');
+            $asset    = new Http2Asset($this->makeUrlAbsolute($js), 'js');
             $asset->setAsync($options->async);
 
             $assets[] = $asset;
@@ -310,5 +310,19 @@ class Http2Support
 
         $root = \PageModel::findByPk($page->rootId);
         return (bool) $root->enableHttp2Optimization;
+    }
+
+    /**
+     * Makes an URL absolute.
+     *
+     * @param string $url
+     */
+    private function makeUrlAbsolute($url)
+    {
+        if (!preg_match('@^https?://@', $url)) {
+            $url = \Environment::get('base') . $url;
+        }
+
+        return $url;
     }
 }

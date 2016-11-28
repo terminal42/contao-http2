@@ -24,12 +24,15 @@ class Http2Asset
      */
     public function __construct($url, $type = null)
     {
-        $this->url  = $url;
+        if (!preg_match('@^https?://@', $url)) {
+            throw new InvalidArgumentException('Must provide absolute links for Http2Asset instances!');
+        }
 
         if (null !== $type && !in_array($type, ['js', 'css'])) {
             throw new LogicException('Sorry but this is only here for JS and CSS assets.');
         }
 
+        $this->url  = $url;
         $this->type = $type;
     }
 
